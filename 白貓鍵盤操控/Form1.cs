@@ -192,6 +192,7 @@ namespace 白貓鍵盤操控
 
         private void btn_Start_Click(object sender, EventArgs e)
         {
+            close = false;
             if (MessageBox.Show("請確定以下資訊是否正確，否則有可能會出問題，如果出現問題" +
                 "\r\n先嘗試按按看鍵盤上排的數字3或搖桿的BACK鍵，都不能的話在嘗試強制關閉或重新開機" +
                 "\r\n選擇的程式PID: " + processlist[listBox1.SelectedIndex].Id.ToString() +
@@ -212,7 +213,25 @@ namespace 白貓鍵盤操控
             SetForegroundWindow(WindowsPtr);
             ResetWindowsRect();
             #endregion
-            
+
+            #region 重設已按下的按鍵
+            isD1Press = false;
+            isD2Press = false;
+            isD3Press = false;
+            isSpacePress = false;
+            isAttackPress = false;
+            isSkill1Press = false;
+            isSkill2Press = false;
+            isSkill3Press = false;
+            isMoveUpPress = false;
+            isResetWindows = false;
+            isMoveDownPress = false;
+            isMoveLeftPress = false;
+            isMoveRightPress = false;
+            isResetWindowsPress = false;
+            isMouseLeftButtonPress = false;
+            #endregion
+
             #region Release
             new Thread(new ThreadStart(delegate
             {                
