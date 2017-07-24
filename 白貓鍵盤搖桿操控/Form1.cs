@@ -1,15 +1,15 @@
-﻿using System;
-using System.Threading;
-using static System.Threading.Thread;
-using System.Diagnostics;
-using System.Windows.Forms;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using WindowsInput;
-using System.Drawing;
-using System.Text.RegularExpressions;
+﻿using EventHook;
 using SharpDX.XInput;
-using EventHook;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Windows.Forms;
+using WindowsInput;
+using static System.Threading.Thread;
 
 namespace 白貓鍵盤操控
 {
