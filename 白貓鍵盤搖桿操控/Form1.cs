@@ -142,8 +142,7 @@ namespace 白貓鍵盤操控
             if (!regex.Match(KeyName).Success) return; //如果按鍵名稱比對後的結果不一樣，就不處理
            
             if (e.KeyData.EventType == KeyEvent.down) //如果按鍵狀態是按下的
-            {
-               
+            {               
                 if (Regex.Match(KeyName, "NumPad[8546]").Success) //如果是移動按鍵
                 {
                     if (KeyName == "NumPad8") isMoveUpPress = true; //上
@@ -494,7 +493,7 @@ namespace 白貓鍵盤操控
                         //移動
                         if ((state.Gamepad.LeftThumbX <= contLThumX - 1000 || state.Gamepad.LeftThumbX >= contLThumX + 1000) || state.Gamepad.LeftThumbY <= contLThumY - 1000 || state.Gamepad.LeftThumbY >= contLThumY + 1000)
                         {
-                            if (!isMove) { SetCursorPos(midX, midY); Sleep(50); mouse.LeftButtonDown(); isMove = true; }
+                            if (!isMove && !isMouseLeftButtonPress) { SetCursorPos(midX, midY); Sleep(50); mouse.LeftButtonDown(); isMove = true; }
                             Sleep(5);
                             if (!isAttack) SetCursorPos(midX - (contLThumX - state.Gamepad.LeftThumbX) / 5000 * 25, midY + (contLThumY - state.Gamepad.LeftThumbY) / 5000 * 20);
                             else SetCursorPos(midX - (contLThumX - state.Gamepad.LeftThumbX) / 5000 * 15, midY + (contLThumY - state.Gamepad.LeftThumbY) / 5000 * 10);
@@ -540,7 +539,7 @@ namespace 白貓鍵盤操控
                             //移動
                             if (!isSpacePress && IsMoveKeyPress())
                             {
-                                if (!isMove) { SetCursorPos(midX, midY); Sleep(50); mouse.LeftButtonDown(); isMove = true; WriteLine("已按下"); }
+                                if (!isMove && !isMouseLeftButtonPress) { SetCursorPos(midX, midY); Sleep(50); mouse.LeftButtonDown(); isMove = true; WriteLine("已按下"); }
                                 if (isMoveLeftPress && isMoveUpPress) { SetCursorPos((isAttack ? leftX + 50 : leftX), (isAttack ? upY - 50 : upY)); WriteLine("左上"); }
                                 else if (isMoveRightPress && isMoveUpPress) { SetCursorPos((isAttack ? rightX - 50 : rightX), (isAttack ? upY - 50 : upY)); WriteLine("右上"); }
                                 else if (isMoveLeftPress && isMoveDownPress) { SetCursorPos(leftX, downY); WriteLine("左下"); }
