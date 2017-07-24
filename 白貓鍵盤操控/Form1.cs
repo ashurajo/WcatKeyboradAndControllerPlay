@@ -232,7 +232,7 @@ namespace 白貓鍵盤操控
             isMouseLeftButtonPress = false;
             #endregion
 
-            #region Release
+            #region 開新執行緒以防止介面卡死
             new Thread(new ThreadStart(delegate
             {                
                 if (xboxController.IsConnected && cb_ControllerPlay.Checked) //如果搖桿已連接，並且使用搖桿遊玩
@@ -248,17 +248,17 @@ namespace 白貓鍵盤操控
                         i--;
                     }
                     State state;
-                    state = xboxController.GetState();
-                    int contLThumX = state.Gamepad.LeftThumbX, contLThumY = state.Gamepad.LeftThumbY;
-                    int contRThumX = state.Gamepad.RightThumbX, contRThumY = state.Gamepad.RightThumbY;
-                    moveAftelSleep = 50;
+                    state = xboxController.GetState(); //取得搖桿目前的狀態
+                    int contLThumX = state.Gamepad.LeftThumbX, contLThumY = state.Gamepad.LeftThumbY; //設定左蘑菇頭置中時的XY
+                    int contRThumX = state.Gamepad.RightThumbX, contRThumY = state.Gamepad.RightThumbY; //設定右蘑菇頭置中時的XY
+                    moveAftelSleep = 50; //設定翻滾後休息50毫秒
                     WriteLine("左蘑菇頭置中時的XY為: " + contLThumX.ToString() + " , " + contLThumY.ToString());
                     WriteLine("右蘑菇頭置中時的XY為: " + contRThumX.ToString() + " , " + contRThumY.ToString());
                     #endregion
                     while (!stop && !close)
                     {
                         if (!xboxController.IsConnected) { WriteLine("搖桿已中斷連結"); break; }
-                        if (GetForegroundWindow() != WindowsPtr) { Sleep(250); continue; }
+                        if (GetForegroundWindow() != WindowsPtr) { Sleep(250); continue; } //如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
                         Sleep(LOOPSLEEP);
                         state = xboxController.GetState();
                         button = state.Gamepad.Buttons;
@@ -499,14 +499,14 @@ namespace 白貓鍵盤操控
                     if (!xboxController.IsConnected) WriteLine("XBox搖桿未連接，使用鍵盤設置");
                     else WriteLine("已關閉搖桿操作，使用鍵盤設置");
                     if (!cb_Move.Checked) { WriteLine("移動控制已關閉，現在只有施放技能的作用"); WriteLine("武器技能施放案件已改成W"); }
-                    KeyboardWatcher.Start();
-                    KeyboardWatcher.OnKeyInput += OnKeyInput;
-                    MouseWatcher.Start();
-                    MouseWatcher.OnMouseInput += OnMouseInput;
+                    KeyboardWatcher.Start(); //開始鍵盤偵測
+                    KeyboardWatcher.OnKeyInput += OnKeyInput; //附加鍵盤事件
+                    MouseWatcher.Start(); //開始滑鼠偵測
+                    MouseWatcher.OnMouseInput += OnMouseInput; //附加滑鼠事件
                     while (!stop && !close)
                     {
-                        if (GetForegroundWindow() != WindowsPtr) { Sleep(500); continue; }
-                        Sleep(LOOPSLEEP);
+                        if (GetForegroundWindow() != WindowsPtr) { Sleep(500); continue; }//如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
+                        Sleep(LOOPSLEEP); //休息
                         if (cb_Move.Checked)
                         {
                             if (!isSpacePress && IsMoveKeyPress())
