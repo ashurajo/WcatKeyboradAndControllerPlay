@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // 組件的一般資訊是由下列的屬性集控制。
 // 變更這些屬性的值即可修改組件的相關
 // 資訊。
-[assembly: AssemblyTitle("白貓鍵盤操控")]
+[assembly: AssemblyTitle("白貓鍵盤搖桿操控")]
 [assembly: AssemblyDescription("用鍵盤跟搖桿玩白貓")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("白貓鍵盤操控")]
+[assembly: AssemblyCompany("WcpTwNews")]
+[assembly: AssemblyProduct("白貓鍵盤搖桿操控")]
 [assembly: AssemblyCopyright("孤之界 Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

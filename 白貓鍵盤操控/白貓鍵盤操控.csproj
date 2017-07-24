@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{231CB8EB-D8CD-42BF-A4AF-C18B85AC4B6D}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>白貓鍵盤操控</RootNamespace>
-    <AssemblyName>白貓鍵盤操控</AssemblyName>
+    <RootNamespace>白貓鍵盤搖桿操控</RootNamespace>
+    <AssemblyName>WcatKCPlay</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -26,10 +26,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\WcatKeyboradAndControllerPlay\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

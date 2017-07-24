@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace 白貓鍵盤操控.Properties {
+namespace 白貓鍵盤搖桿操控.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

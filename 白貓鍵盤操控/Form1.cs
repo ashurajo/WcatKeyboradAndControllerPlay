@@ -33,10 +33,10 @@ namespace 白貓鍵盤操控
             public int Bottom;      // y position of lower-right corner
         }
         #endregion
-
-        const int SKILLSLEEPTIME = 300;
-
+        
         #region 變數
+        const int SKILLSLEEPTIME = 300; //技能施放後的休息時間
+        bool close = false, work = false;
         #region 判斷已按下的按鈕
         bool isD1Press = false;
         bool isD2Press = false;
@@ -54,19 +54,20 @@ namespace 白貓鍵盤操控
         bool isResetWindowsPress = false;
         bool isMouseLeftButtonPress = false;
         #endregion
-        bool close = false, work = false;
-        int mid_x, mid_y;
-        int up_x, up_y;
-        int down_x, down_y;
-        int left_x, left_y;
-        int right_x, right_y;
-        int sk1_x, sk1_y;
-        int sk2_x, sk2_y;
-        int sk3_x, sk3_y;        
-        Controller xboxController = new Controller(UserIndex.One);
-        List<Process> processlist = new List<Process>();
-        IntPtr WindowsPtr;
-        IMouseSimulator Mouse = new InputSimulator().Mouse;
+        #region XY位置
+        int midX, midY;
+        int upX, upY;
+        int downX, downY;
+        int leftX, leftY;
+        int rightX, rightY;
+        int sk1X, sk1Y;
+        int sk2X, sk2Y;
+        int sk3X, sk3Y;
+        #endregion
+        Controller xboxController = new Controller(UserIndex.One); //XBox搖桿
+        List<Process> processList = new List<Process>(); //程式清單
+        IntPtr windowsPtr; //視窗代碼
+        IMouseSimulator mouse = new InputSimulator().Mouse; //滑鼠模擬
         Regex regex = new Regex("(NumPad[1234568]$)|([QWERS]$)|(Space)$(D[123]$)|");
         #endregion
 
@@ -77,17 +78,26 @@ namespace 白貓鍵盤操控
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            richTextBox1.Clear();
-            processlist.Clear();
+            richTextBox1.Clear(); 
+            processList.Clear();
             listBox1.Items.Clear();
+            //取得現在所有執行的程式
             foreach (Process item in Process.GetProcesses())
             {
+                //Try來排除遇到權限問題而導致的錯誤
                 try
                 {
-                    if (item.MainWindowTitle != "") { listBox1.Items.Add("[" + item.MainModule.ModuleName + "] [" + item.Id.ToString() + "]: " + item.MainWindowTitle); processlist.Add(item); }
+                    //如果視窗標題不是空的
+                    if (item.MainWindowTitle != "")
+                    {
+                        //ListBox新增一個項目，命名規則為"[程式的名稱] [程式的PID]: 程式的標題"
+                        listBox1.Items.Add("[" + item.MainModule.ModuleName + "] [" + item.Id.ToString() + "]: " + item.MainWindowTitle);
+                        //新增到程式清單裡
+                        processList.Add(item);
+                    }
                 }
                 catch (Exception) { }
-            }            
+            }
             if (xboxController.IsConnected) { WriteLine("手把已連接"); cb_ControllerPlay.Enabled = true; cb_ControllerPlay.Checked = true; cb_Move.Checked = true; }
             else { WriteLine("手把未連接"); cb_ControllerPlay.Enabled = false; cb_ControllerPlay.Checked = false; }
         }
@@ -127,78 +137,80 @@ namespace 白貓鍵盤操控
 
         private void OnKeyInput(object sender, KeyInputEventArgs e)
         {
-            if (GetForegroundWindow() != WindowsPtr) return;
+            if (GetForegroundWindow() != windowsPtr) return; //如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
             string KeyName = e.KeyData.Keyname;
-            if (!regex.Match(KeyName).Success) return;
-            if (e.KeyData.EventType == KeyEvent.down)
+            if (!regex.Match(KeyName).Success) return; //如果按鍵名稱比對後的結果不一樣，就不處理
+           
+            if (e.KeyData.EventType == KeyEvent.down) //如果按鍵狀態是按下的
             {
-                if (Regex.Match(KeyName, "NumPad[8546]").Success)
+               
+                if (Regex.Match(KeyName, "NumPad[8546]").Success) //如果是移動按鍵
                 {
-                    if (KeyName == "NumPad8") isMoveUpPress = true;
-                    else if (KeyName == "NumPad5") isMoveDownPress = true;
-                    else if (KeyName == "NumPad4") isMoveLeftPress = true;
-                    else if (KeyName == "NumPad6") isMoveRightPress = true;
+                    if (KeyName == "NumPad8") isMoveUpPress = true; //上
+                    else if (KeyName == "NumPad5") isMoveDownPress = true; //下
+                    else if (KeyName == "NumPad4") isMoveLeftPress = true; //左
+                    else if (KeyName == "NumPad6") isMoveRightPress = true; //右
                 }
-                else if (Regex.Match(KeyName, "([QWERS]$)|NumPad[123]").Success)
+                else if (Regex.Match(KeyName, "([QWERS]$)|NumPad[123]").Success) //如果是技能按鍵
                 {
-                    if (KeyName == "R") isResetWindowsPress = true;
-                    if (KeyName == "W") isAttackPress = true;
-                    if (KeyName == "Q" || KeyName == "NumPad1") isSkill1Press = true;
-                    if (KeyName == "E" || KeyName == "NumPad3") isSkill2Press = true;
-                    if (KeyName == (cb_Move.Checked ? "S" : "W") || KeyName == "NumPad2") isSkill3Press = true;
+                    if (KeyName == "R") isResetWindowsPress = true; //重設視窗
+                    if (KeyName == "W") isAttackPress = true; //攻擊
+                    if (KeyName == "Q" || KeyName == "NumPad1") isSkill1Press = true; //技能1
+                    if (KeyName == "E" || KeyName == "NumPad3") isSkill2Press = true; //技能2
+                    if (KeyName == (cb_Move.Checked ? "S" : "W") || KeyName == "NumPad2") isSkill3Press = true; //武器技能
                 }
-                else if (Regex.Match(KeyName, "(D[123]$)").Success)
+                else if (Regex.Match(KeyName, "(D[123]$)").Success) //如果是功能按鍵
                 {
-                    if (KeyName == "D1") isD1Press = true;
-                    if (KeyName == "D2") isD2Press = true;
-                    if (KeyName == "D3") isD3Press = true;
+                    if (KeyName == "D1") isD1Press = true; //暫停
+                    if (KeyName == "D2") isD2Press = true; //繼續
+                    if (KeyName == "D3") isD3Press = true; //停止
                 }
-                else if (KeyName == "Space") isSpacePress = true;
-            }
-            else if (e.KeyData.EventType == KeyEvent.up)
+                else if (KeyName == "Space") isSpacePress = true; //如果是空白鍵
+            }            
+            else if (e.KeyData.EventType == KeyEvent.up) //否則如果是彈起的
             {
-                if (Regex.Match(KeyName, "NumPad[8546]").Success)
+                if (Regex.Match(KeyName, "NumPad[8546]").Success) //如果是移動按鍵
                 {
-                    if (KeyName == "NumPad8") isMoveUpPress = false;
-                    if (KeyName == "NumPad5") isMoveDownPress = false;
-                    if (KeyName == "NumPad4") isMoveLeftPress = false;
-                    if (KeyName == "NumPad6") isMoveRightPress = false;
+                    if (KeyName == "NumPad8") isMoveUpPress = false; //上
+                    if (KeyName == "NumPad5") isMoveDownPress = false; //下
+                    if (KeyName == "NumPad4") isMoveLeftPress = false; //左
+                    if (KeyName == "NumPad6") isMoveRightPress = false; //右
                 }
-                else if (Regex.Match(KeyName, "([QWERS]$)|NumPad[123]").Success)
+                else if (Regex.Match(KeyName, "([QWERS]$)|NumPad[123]").Success) //如果是技能按鍵
                 {
-                    if (KeyName == "R") isResetWindowsPress = false;
-                    if (KeyName == "W") isAttackPress = false;
-                    if (KeyName == "Q" || KeyName == "NumPad1") isSkill1Press = false;
-                    if (KeyName == "E" || KeyName == "NumPad3") isSkill2Press = false;
-                    if (KeyName == (cb_Move.Checked ? "S" : "W") || KeyName == "NumPad2") isSkill3Press = false;
+                    if (KeyName == "R") isResetWindowsPress = false; //重設視窗
+                    if (KeyName == "W") isAttackPress = false; //攻擊
+                    if (KeyName == "Q" || KeyName == "NumPad1") isSkill1Press = false; //技能1
+                    if (KeyName == "E" || KeyName == "NumPad3") isSkill2Press = false; //技能2
+                    if (KeyName == (cb_Move.Checked ? "S" : "W") || KeyName == "NumPad2") isSkill3Press = false; //武器技能
                 }
-                else if (Regex.Match(KeyName, "(D[123]$)").Success)
+                else if (Regex.Match(KeyName, "(D[123]$)").Success) //如果是功能按鍵
                 {
-                    if (KeyName == "D1") isD1Press = false;
-                    if (KeyName == "D2") isD2Press = false;
-                    if (KeyName == "D3") isD3Press = false;
+                    if (KeyName == "D1") isD1Press = false; //暫停
+                    if (KeyName == "D2") isD2Press = false; //繼續
+                    if (KeyName == "D3") isD3Press = false; //停止
                 }
-                else if (KeyName == "Space") isSpacePress = false;
+                else if (KeyName == "Space") isSpacePress = false; //如果是空白鍵
             }
         }
 
         private void OnMouseInput(object sender, EventHook.MouseEventArgs e)
         {
-            if (GetForegroundWindow() != WindowsPtr) return;
-            if (!e.Message.ToString().StartsWith("WM_LBUTTON")) return;
-            if (e.Message.ToString().EndsWith("DOWN")) isMouseLeftButtonPress = true;
-            else isMouseLeftButtonPress = false;
+            if (GetForegroundWindow() != windowsPtr) return; //如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
+            if (!e.Message.ToString().StartsWith("WM_LBUTTON")) return; //如果按下的按鈕不是滑鼠左鍵，就不判斷
+            if (e.Message.ToString().EndsWith("DOWN")) isMouseLeftButtonPress = true; //按下
+            else isMouseLeftButtonPress = false; //彈起
         }
 
         private void btn_Start_Click(object sender, EventArgs e)
         {
-            close = false;
             if (MessageBox.Show("請確定以下資訊是否正確，否則有可能會出問題，如果出現問題" +
                 "\r\n先嘗試按按看鍵盤上排的數字3或搖桿的BACK鍵，都不能的話在嘗試強制關閉或重新開機" +
-                "\r\n選擇的程式PID: " + processlist[listBox1.SelectedIndex].Id.ToString() +
-                "\r\n選擇的視窗標題: " + processlist[listBox1.SelectedIndex].MainWindowTitle
+                "\r\n選擇的程式PID: " + processList[listBox1.SelectedIndex].Id.ToString() +
+                "\r\n選擇的視窗標題: " + processList[listBox1.SelectedIndex].MainWindowTitle
                 , "", MessageBoxButtons.YesNo) == DialogResult.No) return;
 
+            close = false;
             WorkSwitch(false);
             work = true;
             richTextBox1.Clear();
@@ -209,8 +221,8 @@ namespace 白貓鍵盤操控
             int moveAftelSleep = 15;
             GamepadButtonFlags button;
             bool stop = false, isMove = false, isSkillLongPress = false, isSkillPress = false, isAttack = false, isRoll = false;
-            WindowsPtr = processlist[listBox1.SelectedIndex].MainWindowHandle;
-            SetForegroundWindow(WindowsPtr);
+            windowsPtr = processList[listBox1.SelectedIndex].MainWindowHandle;
+            SetForegroundWindow(windowsPtr);
             ResetWindowsRect();
             #endregion
 
@@ -257,37 +269,39 @@ namespace 白貓鍵盤操控
                     #endregion
                     while (!stop && !close)
                     {
-                        if (!xboxController.IsConnected) { WriteLine("搖桿已中斷連結"); break; }
-                        if (GetForegroundWindow() != WindowsPtr) { Sleep(250); continue; } //如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
-                        Sleep(LOOPSLEEP);
-                        state = xboxController.GetState();
-                        button = state.Gamepad.Buttons;
+                        if (!xboxController.IsConnected) { WriteLine("搖桿已中斷連結"); break; } //如果搖桿斷線，就結束
+                        if (GetForegroundWindow() != windowsPtr) { Sleep(250); continue; } //如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
+                        Sleep(LOOPSLEEP); //休息
+                        state = xboxController.GetState(); //取得搖桿目前的狀態
+                        button = state.Gamepad.Buttons; //取得已按下的按鈕
+
+                        //DPad=十字按鍵(搖桿左下的)
                         if (button == GamepadButtonFlags.DPadUp)
                         {
                             if (!isRoll)
                             {
-                                if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                 WriteLine("上滑");
                                 int y = -5;
                                 isRoll = true;
-                                Mouse.LeftButtonDown();
+                                mouse.LeftButtonDown();
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 10);
+                                SetCursorPos(midX, midY + y * 10);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 15);
+                                SetCursorPos(midX, midY + y * 15);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 20);
+                                SetCursorPos(midX, midY + y * 20);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 25);
+                                SetCursorPos(midX, midY + y * 25);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 30);
+                                SetCursorPos(midX, midY + y * 30);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 35);
+                                SetCursorPos(midX, midY + y * 35);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 40);
+                                SetCursorPos(midX, midY + y * 40);
                                 Sleep(moveAftelSleep);
-                                Mouse.LeftButtonUp();
-                                SetCursorPos(mid_x, mid_y);
+                                mouse.LeftButtonUp();
+                                SetCursorPos(midX, midY);
                             }
                         }
                         else if (button == GamepadButtonFlags.DPadDown)
@@ -296,24 +310,24 @@ namespace 白貓鍵盤操控
                             {
                                 int y = 5;
                                 isRoll = true;
-                                Mouse.LeftButtonDown();
+                                mouse.LeftButtonDown();
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 10);
+                                SetCursorPos(midX, midY + y * 10);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 15);
+                                SetCursorPos(midX, midY + y * 15);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 20);
+                                SetCursorPos(midX, midY + y * 20);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 25);
+                                SetCursorPos(midX, midY + y * 25);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 30);
+                                SetCursorPos(midX, midY + y * 30);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 35);
+                                SetCursorPos(midX, midY + y * 35);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x, mid_y + y * 40);
+                                SetCursorPos(midX, midY + y * 40);
                                 Sleep(moveAftelSleep);
-                                Mouse.LeftButtonUp();
-                                SetCursorPos(mid_x, mid_y);
+                                mouse.LeftButtonUp();
+                                SetCursorPos(midX, midY);
                             }
                         }
                         else if (button == GamepadButtonFlags.DPadLeft)
@@ -322,24 +336,24 @@ namespace 白貓鍵盤操控
                             {
                                 int x = -5;
                                 isRoll = true;
-                                Mouse.LeftButtonDown();
+                                mouse.LeftButtonDown();
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 10, mid_y);
+                                SetCursorPos(midX + x * 10, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 15, mid_y);
+                                SetCursorPos(midX + x * 15, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 20, mid_y);
+                                SetCursorPos(midX + x * 20, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 25, mid_y);
+                                SetCursorPos(midX + x * 25, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 30, mid_y);
+                                SetCursorPos(midX + x * 30, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 35, mid_y);
+                                SetCursorPos(midX + x * 35, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 40, mid_y);
+                                SetCursorPos(midX + x * 40, midY);
                                 Sleep(moveAftelSleep);
-                                Mouse.LeftButtonUp();
-                                SetCursorPos(mid_x, mid_y);
+                                mouse.LeftButtonUp();
+                                SetCursorPos(midX, midY);
                             }
                         }
                         else if (button == GamepadButtonFlags.DPadRight)
@@ -348,27 +362,29 @@ namespace 白貓鍵盤操控
                             {
                                 int x = 5;
                                 isRoll = true;
-                                Mouse.LeftButtonDown();
+                                mouse.LeftButtonDown();
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 10, mid_y);
+                                SetCursorPos(midX + x * 10, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 15, mid_y);
+                                SetCursorPos(midX + x * 15, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 20, mid_y);
+                                SetCursorPos(midX + x * 20, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 25, mid_y);
+                                SetCursorPos(midX + x * 25, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 30, mid_y);
+                                SetCursorPos(midX + x * 30, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 35, mid_y);
+                                SetCursorPos(midX + x * 35, midY);
                                 Sleep(MOVESLEEP);
-                                SetCursorPos(mid_x + x * 40, mid_y);
+                                SetCursorPos(midX + x * 40, midY);
                                 Sleep(moveAftelSleep);
-                                Mouse.LeftButtonUp();
-                                SetCursorPos(mid_x, mid_y);
+                                mouse.LeftButtonUp();
+                                SetCursorPos(midX, midY);
                             }
                         }
                         else { isRoll = false; }
+
+                        //重設視窗位置
                         if (button == GamepadButtonFlags.Y)
                         {
                             if (!isResetWindows)
@@ -378,11 +394,13 @@ namespace 白貓鍵盤操控
                             }
                         }
                         else { isResetWindows = false; }
+
+                        //攻擊與施放集氣技能(Shoulder=搖桿後方的短按鈕，Trigger=搖桿後方的長按鈕)
                         if (button.ToString() == "A" || button.ToString() == "LeftShoulder, A" || button.ToString() == "RightShoulder, A")
                         {
                             if (!isAttack)
                             {
-                                Mouse.LeftButtonDown();
+                                mouse.LeftButtonDown();
                                 isAttack = true;
                                 WriteLine("攻擊");
                             }
@@ -392,11 +410,11 @@ namespace 白貓鍵盤操控
                                 {
                                     isSkillLongPress = true;
                                     WriteLine("(集氣)技能1");
-                                    SetCursorPos(mid_x, mid_y);
-                                    SetCursorPos(sk1_x, sk1_y);
-                                    Mouse.LeftButtonUp();
+                                    SetCursorPos(midX, midY);
+                                    SetCursorPos(sk1X, sk1Y);
+                                    mouse.LeftButtonUp();
                                     Sleep(SKILLSLEEPTIME);
-                                    SetCursorPos(mid_x, mid_y);
+                                    SetCursorPos(midX, midY);
                                 }
                             }
                             else if (button.ToString() == "RightShoulder, A")
@@ -405,11 +423,11 @@ namespace 白貓鍵盤操控
                                 {
                                     isSkillLongPress = true;
                                     WriteLine("(集氣)技能2");
-                                    SetCursorPos(mid_x, mid_y);
-                                    SetCursorPos(sk2_x, sk2_y);
-                                    Mouse.LeftButtonUp();
+                                    SetCursorPos(midX, midY);
+                                    SetCursorPos(sk2X, sk2Y);
+                                    mouse.LeftButtonUp();
                                     Sleep(SKILLSLEEPTIME);
-                                    SetCursorPos(mid_x, mid_y);
+                                    SetCursorPos(midX, midY);
                                 }
                             }
                             else if (xboxController.GetState().Gamepad.RightTrigger >= 128 || xboxController.GetState().Gamepad.LeftTrigger >= 128)
@@ -418,27 +436,29 @@ namespace 白貓鍵盤操控
                                 {
                                     isSkillLongPress = true;
                                     WriteLine("(集氣)武器技能");
-                                    SetCursorPos(mid_x, mid_y);
-                                    SetCursorPos(sk3_x, sk3_y);
-                                    Mouse.LeftButtonUp();
+                                    SetCursorPos(midX, midY);
+                                    SetCursorPos(sk3X, sk3Y);
+                                    mouse.LeftButtonUp();
                                     Sleep(SKILLSLEEPTIME);
-                                    SetCursorPos(mid_x, mid_y);
+                                    SetCursorPos(midX, midY);
                                 }
                             }
                         }
                         else { isAttack = false; isSkillLongPress = false; }
+
+                        //施放技能
                         if (button == GamepadButtonFlags.LeftShoulder)
                         {
                             if (!isSkillPress && !isSkillLongPress)
                             {
                                 isSkillPress = true;
                                 WriteLine("技能1");
-                                SetCursorPos(mid_x, mid_y);
-                                Mouse.LeftButtonDown();
+                                SetCursorPos(midX, midY);
+                                mouse.LeftButtonDown();
                                 Sleep(SKILLSLEEPTIME);
-                                SetCursorPos(sk1_x, sk1_y);
-                                Mouse.LeftButtonUp();
-                                SetCursorPos(mid_x, mid_y);
+                                SetCursorPos(sk1X, sk1Y);
+                                mouse.LeftButtonUp();
+                                SetCursorPos(midX, midY);
                             }
                         }
                         else if (button == GamepadButtonFlags.RightShoulder)
@@ -447,12 +467,12 @@ namespace 白貓鍵盤操控
                             {
                                 isSkillPress = true;
                                 WriteLine("技能2");
-                                SetCursorPos(mid_x, mid_y);
-                                Mouse.LeftButtonDown();
+                                SetCursorPos(midX, midY);
+                                mouse.LeftButtonDown();
                                 Sleep(SKILLSLEEPTIME);
-                                SetCursorPos(sk2_x, sk2_y);
-                                Mouse.LeftButtonUp();
-                                SetCursorPos(mid_x, mid_y);
+                                SetCursorPos(sk2X, sk2Y);
+                                mouse.LeftButtonUp();
+                                SetCursorPos(midX, midY);
                             }
                         }
                         else if (xboxController.GetState().Gamepad.RightTrigger >= 128 || xboxController.GetState().Gamepad.LeftTrigger >= 128)
@@ -461,24 +481,28 @@ namespace 白貓鍵盤操控
                             {
                                 isSkillPress = true;
                                 WriteLine("武器技能");
-                                SetCursorPos(mid_x, mid_y);
-                                Mouse.LeftButtonDown();
+                                SetCursorPos(midX, midY);
+                                mouse.LeftButtonDown();
                                 Sleep(SKILLSLEEPTIME);
-                                SetCursorPos(sk3_x, sk3_y);
-                                Mouse.LeftButtonUp();
-                                SetCursorPos(mid_x, mid_y);
+                                SetCursorPos(sk3X, sk3Y);
+                                mouse.LeftButtonUp();
+                                SetCursorPos(midX, midY);
                             }
                         }
                         else isSkillPress = false;
+
+                        //移動
                         if ((state.Gamepad.LeftThumbX <= contLThumX - 1000 || state.Gamepad.LeftThumbX >= contLThumX + 1000) || state.Gamepad.LeftThumbY <= contLThumY - 1000 || state.Gamepad.LeftThumbY >= contLThumY + 1000)
                         {
-                            if (!isMove) { SetCursorPos(mid_x, mid_y); Sleep(50); Mouse.LeftButtonDown(); isMove = true; }
+                            if (!isMove) { SetCursorPos(midX, midY); Sleep(50); mouse.LeftButtonDown(); isMove = true; }
                             Sleep(5);
-                            if (!isAttack) SetCursorPos(mid_x - (contLThumX - state.Gamepad.LeftThumbX) / 5000 * 25, mid_y + (contLThumY - state.Gamepad.LeftThumbY) / 5000 * 20);
-                            else SetCursorPos(mid_x - (contLThumX - state.Gamepad.LeftThumbX) / 5000 * 15, mid_y + (contLThumY - state.Gamepad.LeftThumbY) / 5000 * 10);
+                            if (!isAttack) SetCursorPos(midX - (contLThumX - state.Gamepad.LeftThumbX) / 5000 * 25, midY + (contLThumY - state.Gamepad.LeftThumbY) / 5000 * 20);
+                            else SetCursorPos(midX - (contLThumX - state.Gamepad.LeftThumbX) / 5000 * 15, midY + (contLThumY - state.Gamepad.LeftThumbY) / 5000 * 10);
                         }
                         else if (isMove) { isMove = false; }
-                        else { SetCursorPos(mid_x, mid_y); if (!isAttack) Mouse.LeftButtonUp(); }
+                        else { SetCursorPos(midX, midY); if (!isAttack) mouse.LeftButtonUp(); }
+
+                        //暫停
                         if (button == GamepadButtonFlags.X)
                         {
                             WriteLine("暫停");
@@ -491,6 +515,8 @@ namespace 白貓鍵盤操控
                                 Sleep(50);
                             }
                         }
+
+                        //結束
                         if (button == GamepadButtonFlags.Back) stop = true;
                     }
                 }
@@ -505,152 +531,162 @@ namespace 白貓鍵盤操控
                     MouseWatcher.OnMouseInput += OnMouseInput; //附加滑鼠事件
                     while (!stop && !close)
                     {
-                        if (GetForegroundWindow() != WindowsPtr) { Sleep(500); continue; }//如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
+                        if (GetForegroundWindow() != windowsPtr) { Sleep(500); continue; }//如果前景視窗的控制代碼跟選擇的視窗代碼不一樣，就不執行判斷
                         Sleep(LOOPSLEEP); //休息
+
+                        //如果開啟移動控制
                         if (cb_Move.Checked)
                         {
+                            //移動
                             if (!isSpacePress && IsMoveKeyPress())
                             {
-                                if (!isMove) { SetCursorPos(mid_x, mid_y); Sleep(50); Mouse.LeftButtonDown(); isMove = true; WriteLine("已按下"); }
-                                if (isMoveLeftPress && isMoveUpPress) { SetCursorPos((isAttack ? left_x + 50 : left_x), (isAttack ? up_y - 50 : up_y)); WriteLine("左上"); }
-                                else if (isMoveRightPress && isMoveUpPress) { SetCursorPos((isAttack ? right_x - 50 : right_x), (isAttack ? up_y - 50 : up_y)); WriteLine("右上"); }
-                                else if (isMoveLeftPress && isMoveDownPress) { SetCursorPos(left_x, down_y); WriteLine("左下"); }
-                                else if (isMoveRightPress && isMoveDownPress) { SetCursorPos(right_x, down_y); WriteLine("右下"); }
-                                else if (isMoveUpPress) { SetCursorPos(up_x, up_y); WriteLine("上"); }
-                                else if (isMoveDownPress) { SetCursorPos(down_x, down_y); WriteLine("下"); }
-                                else if (isMoveLeftPress) { SetCursorPos(left_x, left_y); WriteLine("左"); }
-                                else if (isMoveRightPress) { SetCursorPos(right_x, right_y); WriteLine("右"); }
+                                if (!isMove) { SetCursorPos(midX, midY); Sleep(50); mouse.LeftButtonDown(); isMove = true; WriteLine("已按下"); }
+                                if (isMoveLeftPress && isMoveUpPress) { SetCursorPos((isAttack ? leftX + 50 : leftX), (isAttack ? upY - 50 : upY)); WriteLine("左上"); }
+                                else if (isMoveRightPress && isMoveUpPress) { SetCursorPos((isAttack ? rightX - 50 : rightX), (isAttack ? upY - 50 : upY)); WriteLine("右上"); }
+                                else if (isMoveLeftPress && isMoveDownPress) { SetCursorPos(leftX, downY); WriteLine("左下"); }
+                                else if (isMoveRightPress && isMoveDownPress) { SetCursorPos(rightX, downY); WriteLine("右下"); }
+                                else if (isMoveUpPress) { SetCursorPos(upX, upY); WriteLine("上"); }
+                                else if (isMoveDownPress) { SetCursorPos(downX, downY); WriteLine("下"); }
+                                else if (isMoveLeftPress) { SetCursorPos(leftX, leftY); WriteLine("左"); }
+                                else if (isMoveRightPress) { SetCursorPos(rightX, rightY); WriteLine("右"); }
                             }
                             else if (isMove) { isMove = false; }
+
+                            //翻滾
                             else if (isSpacePress)
                             {
                                 if (isMoveUpPress)
                                 {
                                     if (!isRoll)
                                     {
-                                        if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                        if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                         WriteLine("上滑");
                                         int y = -5;
                                         isRoll = true;
-                                        Mouse.LeftButtonDown();
+                                        mouse.LeftButtonDown();
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 10);
+                                        SetCursorPos(midX, midY + y * 10);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 15);
+                                        SetCursorPos(midX, midY + y * 15);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 20);
+                                        SetCursorPos(midX, midY + y * 20);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 25);
+                                        SetCursorPos(midX, midY + y * 25);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 30);
+                                        SetCursorPos(midX, midY + y * 30);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 35);
+                                        SetCursorPos(midX, midY + y * 35);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 40);
+                                        SetCursorPos(midX, midY + y * 40);
                                         Sleep(moveAftelSleep);
-                                        Mouse.LeftButtonUp();
-                                        SetCursorPos(mid_x, mid_y);
+                                        mouse.LeftButtonUp();
+                                        SetCursorPos(midX, midY);
                                     }
                                 }
                                 else if (isMoveDownPress)
                                 {
                                     if (!isRoll)
                                     {
-                                        if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                        if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                         WriteLine("下滑");
                                         int y = 5;
                                         isRoll = true;
-                                        Mouse.LeftButtonDown();
+                                        mouse.LeftButtonDown();
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 10);
+                                        SetCursorPos(midX, midY + y * 10);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 15);
+                                        SetCursorPos(midX, midY + y * 15);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 20);
+                                        SetCursorPos(midX, midY + y * 20);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 25);
+                                        SetCursorPos(midX, midY + y * 25);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 30);
+                                        SetCursorPos(midX, midY + y * 30);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 35);
+                                        SetCursorPos(midX, midY + y * 35);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x, mid_y + y * 40);
+                                        SetCursorPos(midX, midY + y * 40);
                                         Sleep(moveAftelSleep);
-                                        Mouse.LeftButtonUp();
-                                        SetCursorPos(mid_x, mid_y);
+                                        mouse.LeftButtonUp();
+                                        SetCursorPos(midX, midY);
                                     }
                                 }
                                 else if (isMoveLeftPress)
                                 {
                                     if (!isRoll)
                                     {
-                                        if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                        if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                         WriteLine("左滑");
                                         int x = -5;
                                         isRoll = true;
-                                        Mouse.LeftButtonDown();
+                                        mouse.LeftButtonDown();
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 10, mid_y);
+                                        SetCursorPos(midX + x * 10, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 15, mid_y);
+                                        SetCursorPos(midX + x * 15, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 20, mid_y);
+                                        SetCursorPos(midX + x * 20, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 25, mid_y);
+                                        SetCursorPos(midX + x * 25, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 30, mid_y);
+                                        SetCursorPos(midX + x * 30, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 35, mid_y);
+                                        SetCursorPos(midX + x * 35, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 40, mid_y);
+                                        SetCursorPos(midX + x * 40, midY);
                                         Sleep(moveAftelSleep);
-                                        Mouse.LeftButtonUp();
-                                        SetCursorPos(mid_x, mid_y);
+                                        mouse.LeftButtonUp();
+                                        SetCursorPos(midX, midY);
                                     }
                                 }
                                 else if (isMoveRightPress)
                                 {
                                     if (!isRoll)
                                     {
-                                        if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                        if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                         WriteLine("右滑");
                                         int x = 5;
                                         isRoll = true;
-                                        Mouse.LeftButtonDown();
+                                        mouse.LeftButtonDown();
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 10, mid_y);
+                                        SetCursorPos(midX + x * 10, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 15, mid_y);
+                                        SetCursorPos(midX + x * 15, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 20, mid_y);
+                                        SetCursorPos(midX + x * 20, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 25, mid_y);
+                                        SetCursorPos(midX + x * 25, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 30, mid_y);
+                                        SetCursorPos(midX + x * 30, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 35, mid_y);
+                                        SetCursorPos(midX + x * 35, midY);
                                         Sleep(MOVESLEEP);
-                                        SetCursorPos(mid_x + x * 40, mid_y);
+                                        SetCursorPos(midX + x * 40, midY);
                                         Sleep(moveAftelSleep);
-                                        Mouse.LeftButtonUp();
-                                        SetCursorPos(mid_x, mid_y);
+                                        mouse.LeftButtonUp();
+                                        SetCursorPos(midX, midY);
                                     }
                                 }
                                 else { isRoll = false; }
                             }
                             else if (isRoll) { isRoll = false; }
-                            else { SetCursorPos(mid_x, mid_y); if (!isAttackPress && isMouseLeftButtonPress) Mouse.LeftButtonUp(); }
+
+                            else { SetCursorPos(midX, midY); if (!isAttackPress && isMouseLeftButtonPress) mouse.LeftButtonUp(); }
                         }
+
+                        //攻擊
                         if (isAttackPress)
                         {
                             if (!isAttack)
                             {
-                                Mouse.LeftButtonDown();
+                                mouse.LeftButtonDown();
                                 isAttack = true;
                                 WriteLine("攻擊");
                             }
                         }
                         else { isAttack = false; }
+
+                        //技能
                         if (isSkill1Press)
                         {
                             if (!isSkillPress)
@@ -660,14 +696,14 @@ namespace 白貓鍵盤操控
                                 if (isAttack) WriteLine("(集氣)技能1");
                                 else
                                 {
-                                    if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                    if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                     WriteLine("技能1");
-                                    SetCursorPos(mid_x, mid_y);
-                                    Mouse.LeftButtonDown();
+                                    SetCursorPos(midX, midY);
+                                    mouse.LeftButtonDown();
                                     Sleep(SKILLSLEEPTIME);
                                 }
-                                SetCursorPos(sk1_x, sk1_y);
-                                Mouse.LeftButtonUp();
+                                SetCursorPos(sk1X, sk1Y);
+                                mouse.LeftButtonUp();
                                 if (!cb_Move.Checked) SetCursorPos(old_point.X, old_point.Y);
                             }
                         }
@@ -680,14 +716,14 @@ namespace 白貓鍵盤操控
                                 if (isAttack) WriteLine("(集氣)技能2");
                                 else
                                 {
-                                    if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                    if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                     WriteLine("技能2");
-                                    SetCursorPos(mid_x, mid_y);
-                                    Mouse.LeftButtonDown();
+                                    SetCursorPos(midX, midY);
+                                    mouse.LeftButtonDown();
                                     Sleep(SKILLSLEEPTIME);
                                 }
-                                SetCursorPos(sk2_x, sk2_y);
-                                Mouse.LeftButtonUp();
+                                SetCursorPos(sk2X, sk2Y);
+                                mouse.LeftButtonUp();
                                 if (!cb_Move.Checked) SetCursorPos(old_point.X, old_point.Y);
                             }
                         }
@@ -700,20 +736,24 @@ namespace 白貓鍵盤操控
                                 if (isAttack) WriteLine("(集氣)武器技能");
                                 else
                                 {
-                                    if (isMouseLeftButtonPress) Mouse.LeftButtonUp();
+                                    if (isMouseLeftButtonPress) mouse.LeftButtonUp();
                                     WriteLine("武器技能");
-                                    SetCursorPos(mid_x, mid_y);
-                                    Mouse.LeftButtonDown();
+                                    SetCursorPos(midX, midY);
+                                    mouse.LeftButtonDown();
                                     Sleep(SKILLSLEEPTIME);
                                 }
-                                SetCursorPos(sk3_x, sk3_y);
-                                Mouse.LeftButtonUp();
+                                SetCursorPos(sk3X, sk3Y);
+                                mouse.LeftButtonUp();
                                 if (!cb_Move.Checked) SetCursorPos(old_point.X, old_point.Y);
                             }
                         }
                         else { isSkillPress = false; }
+
+                        //重設視窗
                         if (isResetWindowsPress) { if (!isResetWindows) { isResetWindows = true; ResetWindowsRect(); } }
                         else isResetWindows = false;
+
+                        //暫停
                         if (isD1Press)
                         {
                             WriteLine("暫停");
@@ -724,10 +764,12 @@ namespace 白貓鍵盤操控
                                 Sleep(50);
                             }
                         }
+
+                        //停止
                         if (isD3Press) stop = true;
                     }
-                    KeyboardWatcher.Stop();
-                    MouseWatcher.Stop();
+                    KeyboardWatcher.Stop(); //停止鍵盤偵測
+                    MouseWatcher.Stop(); //停止滑鼠偵測
                 }
                 WriteLine("已結束");
                 work = false;
@@ -739,8 +781,8 @@ namespace 白貓鍵盤操控
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listBox1.SelectedIndex == -1) return;
-            lab_PID.Text = "選擇的程式PID: " + processlist[listBox1.SelectedIndex].Id.ToString();
-            lab_PTitle.Text = "選擇的視窗標題: " + processlist[listBox1.SelectedIndex].MainWindowTitle;
+            lab_PID.Text = "選擇的程式PID: " + processList[listBox1.SelectedIndex].Id.ToString();
+            lab_PTitle.Text = "選擇的視窗標題: " + processList[listBox1.SelectedIndex].MainWindowTitle;
             btn_Start.Enabled = !work;
         }
 
@@ -751,38 +793,63 @@ namespace 白貓鍵盤操控
             richTextBox1.ScrollToCaret();
         }
 
+        string LastStr = "";
+        /// <summary>
+        /// 寫入指定字串到RichTextBox
+        /// </summary>
+        /// <param name="Text">字串</param>
         private void WriteLine(string Text)
         {
             if (IsDisposed) return;
-            Text += "\r\n";
+
+            Text += "\r\n"; //加上分行符號
+            if (LastStr == Text) return; //如果最後的字串跟現在的字串一樣，就跳過(防止重複輸出)
+
+            //輸出格式"[現在時間] 字串"
             if (InvokeRequired) BeginInvoke(new Action(delegate { richTextBox1.AppendText("[" + DateTime.Now.ToString("hh-mm-ss") + "] " + Text); }));
             else richTextBox1.AppendText("[" + DateTime.Now.ToString("hh-mm-ss") + "] " + Text);
+
+            LastStr = Text;
         }
 
+        /// <summary>
+        /// 設定游標的位置
+        /// </summary>
+        /// <param name="x">X軸</param>
+        /// <param name="y">Y軸</param>
         private void SetCursorPos(int x, int y)
         {
-            Cursor.Position = new System.Drawing.Point(x, y);
+            Cursor.Position = new Point(x, y);
         }
         
+        /// <summary>
+        /// 切換控制項的啟用開關
+        /// </summary>
+        /// <param name="enable">True為開，False為關</param>
         private void WorkSwitch(bool enable)
         {
             if (IsDisposed) return;
             if (InvokeRequired) BeginInvoke(new Action(delegate
             {
-                btn_Start.Enabled = enable;
-                btn_Reset.Enabled = enable;
-                cb_ControllerPlay.Enabled = xboxController.IsConnected && enable;
-                cb_Move.Enabled = enable;
+                btn_Start.Enabled = enable; //開始按鈕
+                btn_Reset.Enabled = enable; //重設按鈕
+                cb_ControllerPlay.Enabled = xboxController.IsConnected && enable; //搖桿控制方塊
+                cb_Move.Enabled = enable && !cb_ControllerPlay.Enabled; //移動控制方塊
             }));
             else
             {
-                btn_Start.Enabled = enable;
-                btn_Reset.Enabled = enable;
-                cb_ControllerPlay.Enabled = xboxController.IsConnected && enable;
-                cb_Move.Enabled = enable;
+                btn_Start.Enabled = enable; //開始按鈕
+                btn_Reset.Enabled = enable; //重設按鈕
+                cb_ControllerPlay.Enabled = xboxController.IsConnected && enable; //搖桿控制方塊
+                cb_Move.Enabled = enable && !cb_ControllerPlay.Enabled; //移動控制方塊
             }
         }
 
+        /// <summary>
+        /// 取得電量的中文
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
         private string GetBatteryChinese(BatteryLevel level)
         {
             switch (level)
@@ -800,30 +867,37 @@ namespace 白貓鍵盤操控
             }
         }
 
+        /// <summary>
+        /// 重設視窗大小
+        /// </summary>
         private void ResetWindowsRect()
         {
-            GetWindowRect(WindowsPtr, out RECT rect);
-            mid_x = (rect.Left + rect.Right) / 2;
-            mid_y = (rect.Top + rect.Bottom) / 2;
-            up_x = mid_x;
-            up_y = mid_y - 100;
-            down_x = mid_x;
-            down_y = mid_y + 100;
-            left_x = mid_x - 100;
-            left_y = mid_y;
-            right_x = mid_x + 100;
-            right_y = mid_y;
-            sk1_x = mid_x - 100;
-            sk1_y = mid_y - 110;
-            sk2_x = mid_x + 100;
-            sk2_y = mid_y - 110;
-            sk3_x = mid_x;
-            sk3_y = mid_y + 180;
+            GetWindowRect(windowsPtr, out RECT rect);
+            midX = (rect.Left + rect.Right) / 2;
+            midY = (rect.Top + rect.Bottom) / 2;
+            upX = midX;
+            upY = midY - 100;
+            downX = midX;
+            downY = midY + 100;
+            leftX = midX - 100;
+            leftY = midY;
+            rightX = midX + 100;
+            rightY = midY;
+            sk1X = midX - 100;
+            sk1Y = midY - 110;
+            sk2X = midX + 100;
+            sk2Y = midY - 110;
+            sk3X = midX;
+            sk3Y = midY + 180;
             WriteLine("已重設視窗位置");
             WriteLine("上: " + rect.Top + " 下: " + rect.Bottom);
             WriteLine("左: " + rect.Left + " 右: " + rect.Right);
         }
         
+        /// <summary>
+        /// 取得移動按鍵是否被按下
+        /// </summary>
+        /// <returns></returns>
         private bool IsMoveKeyPress()
         {
             return isMoveUpPress || isMoveDownPress || isMoveLeftPress || isMoveRightPress;
