@@ -153,7 +153,7 @@ namespace 白貓鍵盤操控
                 else if (Regex.Match(KeyName, "([QWERS]$)|NumPad[123]").Success) //如果是技能按鍵
                 {
                     if (KeyName == "R") isResetWindowsPress = true; //重設視窗
-                    if (KeyName == "W") isAttackPress = true; //攻擊
+                    if (!cb_Move.Checked && KeyName == "W") isAttackPress = true; //攻擊
                     if (KeyName == "Q" || KeyName == "NumPad1") isSkill1Press = true; //技能1
                     if (KeyName == "E" || KeyName == "NumPad3") isSkill2Press = true; //技能2
                     if (KeyName == (cb_Move.Checked ? "S" : "W") || KeyName == "NumPad2") isSkill3Press = true; //武器技能
@@ -178,7 +178,7 @@ namespace 白貓鍵盤操控
                 else if (Regex.Match(KeyName, "([QWERS]$)|NumPad[123]").Success) //如果是技能按鍵
                 {
                     if (KeyName == "R") isResetWindowsPress = false; //重設視窗
-                    if (KeyName == "W") isAttackPress = false; //攻擊
+                    if (!cb_Move.Checked && KeyName == "W") isAttackPress = true; //攻擊
                     if (KeyName == "Q" || KeyName == "NumPad1") isSkill1Press = false; //技能1
                     if (KeyName == "E" || KeyName == "NumPad3") isSkill2Press = false; //技能2
                     if (KeyName == (cb_Move.Checked ? "S" : "W") || KeyName == "NumPad2") isSkill3Press = false; //武器技能
